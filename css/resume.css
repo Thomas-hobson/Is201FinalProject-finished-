@@ -1,0 +1,58 @@
+/* Custom overrides for Bootstrap to match scratch page theme */
+
+/* Change primary color to green (from scratch.css header) */
+.bg-primary {
+  background-color: #0f5132 !important; /* Dark green for header */
+}
+
+/* Navbar adjustments if needed */
+.navbar-dark .navbar-nav .nav-link {
+  color: #d1fae5; /* Light green for links */
+}
+.navbar-dark .navbar-nav .nav-link:hover {
+  color: #ffffff; /* White on hover */
+}
+
+/* Card borders and shadows to match scratch */
+.card {
+  border: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+}
+
+/* Body background and text color */
+body.bg-light {
+  background-color: #f4f6f8 !important; /* Light gray-blue from scratch */
+  color: #1f2933; /* Dark text */
+}
+
+/* Headings with bottom border like scratch */
+h2 {
+  border-bottom: 3px solid #0f5132;
+  padding-bottom: 6px;
+}
+
+/* Footer to match scratch footer style */
+.bg-dark {
+  background-color: #e5e7eb !important; /* Light gray from scratch footer */
+  color: #374151 !important; /* Darker text */
+}
+
+/* Links in content */
+a.text-white {
+  color: #d1fae5 !important; /* Light green for footer links */
+}
+a.text-white:hover {
+  color: #ffffff !important;
+}
+
+/* Optional: Font family to match scratch */
+body {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  line-height: 1.6;
+}
+
+/* Headshot styling if needed */
+.rounded-circle {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); /* Match image shadow from scratch */
+}

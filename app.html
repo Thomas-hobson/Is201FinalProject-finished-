@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Simulator Game</title>
+<style>
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to right, #6dd5ed, #2193b0);
+    margin:0;
+    color:#fff;
+}
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+h1, h2 { text-align:center; margin:10px 0; }
+
+/* Start Page */
+#start-page {
+    position:fixed; top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.95);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;
+}
+#start-page h1 { font-size:3rem; margin-bottom:20px; }
+#start-page p { max-width:600px; margin-bottom:20px; text-align:center; font-size:1.1rem; }
+#start-page button {
+    padding:12px 20px; font-size:1rem;
+    border:none; border-radius:6px; cursor:pointer;
+    background:#0f0; color:#000; margin:5px;
+}
+#start-page button:hover { background:#0c0; }
+
+/* Stats and Menus */
+.stats { display:flex; justify-content:space-around; margin:20px 0; flex-wrap: wrap; }
+.stat { background: rgba(0,0,0,0.3); border-radius:10px; padding:10px; width:220px; position: relative; margin:10px; }
+.stat-name { font-weight:bold; margin-bottom:5px; }
+.stat-bar { background: rgba(255,255,255,0.2); border-radius:10px; height:25px; position:relative; overflow:hidden; }
+.stat-fill { height:100%; width:0%; background:#0f0; border-radius:10px; transition: width 0.7s ease; text-align:center; line-height:25px; font-weight:bold; color:#000; }
+.stat-fill.negative { background:#f00; }
+.floating-change { position:absolute; font-size:1rem; font-weight:bold; animation: floatUp 1s ease-out forwards; }
+@keyframes floatUp { 0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-30px);} }
+.menu-container { display:flex; justify-content: space-around; flex-wrap: wrap; margin: 20px 0; }
+.menu { background: rgba(0,0,0,0.3); padding:10px; border-radius:10px; flex:1 1 180px; margin:10px; }
+.menu h3 { text-align:center; }
+.menu button { display:block; margin:5px auto; padding:8px 10px; font-size:0.9rem; border:none; border-radius:5px; cursor:pointer; position: relative; background: rgba(255,255,255,0.8); color:#000; }
+.menu button:hover { background: rgba(255,255,255,1); }
+.menu button:disabled { background: rgba(200,200,200,0.4); color:#666; cursor:not-allowed; }
+.tooltip { visibility:hidden; background-color: rgba(0,0,0,0.8); color:#fff; padding:5px 8px; border-radius:5px; position:absolute; top:-5px; left:105%; z-index:1; width:260px; font-size:0.85rem; }
+.menu button:hover .tooltip { visibility: visible; }
+.end-screen {text-align:center; margin-top:40px; display:none;}
+</style>
+</head>
+<body>
+
+<div id="start-page">
+<h1>Life Simulator</h1>
+<p>Make choices every year that affect your happiness, health, net worth, invested funds, and life satisfaction. Work, study, invest, travel, and volunteer to balance life and aim for FIRE (financial independence and early retirement)!</p>
+<p style="color:#ff0; font-size:0.9rem; max-width:500px; text-align:center;">
+Disclaimer: This game is not fully balanced and some choices may lead to extreme outcomes quickly. Play for fun and experimentation!
+</p>
+<button onclick="startGame()">Start Game</button>
+<button onclick="goBack()">Return to Home Page</button>
+</div>
+
+<div class="container">
+<h1>Life Simulator</h1>
+<h2 id="age-display">Age: 20</h2>
+<div class="stats">
+<div class="stat" id="happiness"><div class="stat-name">Happiness</div><div class="stat-bar"><div class="stat-fill" id="happiness-fill">50</div></div></div>
+<div class="stat" id="networth"><div class="stat-name">Net Worth</div><div class="stat-bar"><div class="stat-fill" id="networth-fill">1000</div></div></div>
+<div class="stat" id="invested"><div class="stat-name">Invested Funds</div><div class="stat-bar"><div class="stat-fill" id="invested-fill">0</div></div></div>
+<div class="stat" id="health"><div class="stat-name">Health</div><div class="stat-bar"><div class="stat-fill" id="health-fill">50</div></div></div>
+<div class="stat" id="satisfaction"><div class="stat-name">Life Satisfaction</div><div class="stat-bar"><div class="stat-fill" id="satisfaction-fill">50</div></div></div>
+</div>
+
+<div class="menu-container" id="menu-container">
+<div class="menu" id="work-menu"><h3>Work / Career</h3></div>
+<div class="menu" id="finance-menu"><h3>Finance / Investments</h3></div>
+<div class="menu" id="lifestyle-menu"><h3>Lifestyle / Fun</h3></div>
+<div class="menu" id="health-menu"><h3>Health</h3></div>
+<div class="menu" id="service-menu"><h3>Service</h3></div>
+</div>
+
+<div class="end-screen" id="end-screen">
+<h2>Game Over!</h2>
+<p id="summary"></p>
+<button onclick="restartGame()">Play Again</button>
+<button onclick="goBack()">Return to Home Page</button>
+</div>
+
+<script>
+// --- Variables ---
+let age = 20;
+const maxAge = 85;
+let stats = {happiness:50, networth:1000, invested:0, health:50, satisfaction:50};
+let collegeTaken = false;
+let serviceDone = false;
+let debtful = false;
+const retirementThreshold = 1000000;
+let gameOver = false;
+
+const icons = {"Work / Career":"💼","Finance / Investments":"💰","Lifestyle / Fun":"✈️","Health":"🏋️","Service":"🤝"};
+
+// --- Helper Functions ---
+function clampStats(){ stats.happiness=Math.min(Math.max(stats.happiness,0),100); stats.health=Math.min(Math.max(stats.health,0),100); stats.satisfaction=Math.min(Math.max(stats.satisfaction,0),100); stats.networth=Math.max(stats.networth,0); stats.invested=Math.max(stats.invested,0);}
+function animateStatChange(statId,change){
+    const fillEl=document.getElementById(statId+'-fill'); const el=document.getElementById(statId);
+    fillEl.textContent=Math.round(stats[statId]);
+    let percent=(statId==='networth'||statId==='invested')?Math.min(stats[statId]/retirementThreshold*100,100):Math.min(stats[statId],100);
+    fillEl.style.width=percent+"%";
+    if(change!==0){ fillEl.classList.add(change>0?'increase':'negative'); const floatSpan=document.createElement('span'); floatSpan.className='floating-change'; floatSpan.textContent=(change>0?'+':'')+change; el.appendChild(floatSpan); setTimeout(()=>{el.removeChild(floatSpan)},1000); setTimeout(()=>fillEl.classList.remove('increase'),500); setTimeout(()=>fillEl.classList.remove('negative'),500);}
+}
+function updateStatsDisplay(){ for(const key in stats){ animateStatChange(key,0); } }
+function statInteractions(){
+    if(stats.happiness<30){ stats.health-=2; animateStatChange('health',-2);}
+    if(stats.networth<5000){ stats.satisfaction-=2; animateStatChange('satisfaction',-2);}
+    if(debtful){ stats.health-=3; stats.satisfaction-=3; animateStatChange('health',-3); animateStatChange('satisfaction',-3);}
+    clampStats();
+}
+
+// --- Actions ---
+const actions=[
+{menu:'work-menu',text:'Work Part-Time',cost:0,duration:5,effects:{networth:6000,happiness:-2,health:-1},requires:()=>true},
+{menu:'work-menu',text:'Work Full-Time',cost:0,duration:5,effects:{networth:17500,happiness:-5,health:-3},requires:()=>true},
+{menu:'work-menu',text:'College / University',cost:20000,duration:5,effects:{networth:-5000,satisfaction:10},requires:()=>age<=30&&!collegeTaken},
+{menu:'work-menu',text:'High-Paying Career',cost:0,duration:5,effects:{networth:37500,happiness:-5,health:-3},requires:()=>collegeTaken},
+{menu:'finance-menu',text:'Invest in Stocks',cost:5000,duration:0,effects:{invest:true},requires:()=>stats.networth>=5000},
+{menu:'finance-menu',text:'Save Money',cost:0,duration:5,effects:{networth:5000},requires:()=>true},
+{menu:'finance-menu',text:'Retire',cost:0,duration:0,effects:{},requires:()=>stats.networth>=retirementThreshold},
+{menu:'lifestyle-menu',text:'Travel',cost:5000,duration:1,effects:{happiness:10,networth:-5000,health:-1,satisfaction:5},requires:()=>stats.networth>=5000},
+{menu:'lifestyle-menu',text:'Party',cost:3000,duration:1,effects:{happiness:15,networth:-3000,health:-5,satisfaction:5},requires:()=>stats.networth>=3000},
+{menu:'health-menu',text:'Exercise',cost:1000,duration:1,effects:{health:10,happiness:5},requires:()=>stats.networth>=1000},
+{menu:'health-menu',text:'Unhealthy Lifestyle',cost:0,duration:1,effects:{happiness:10,health:-5},requires:()=>true},
+{menu:'service-menu',text:'Volunteer',cost:1000,duration:2,effects:{happiness:5,satisfaction:15,networth:-1000},requires:()=>stats.networth>=1000}
+];
+
+// --- Render Menus ---
+function renderMenus(){
+    if(gameOver) return;
+    for(const menuId of ['work-menu','finance-menu','lifestyle-menu','health-menu','service-menu']){
+        const menuDiv=document.getElementById(menuId); menuDiv.innerHTML=`<h3>${menuDiv.querySelector('h3').textContent}</h3>`;
+        const menuName=menuDiv.querySelector('h3').textContent;
+        actions.filter(a=>a.menu===menuId).forEach(action=>{
+            const btn=document.createElement('button');
+            btn.innerHTML=`${icons[menuName]} ${action.text}${action.cost>0?' ($'+action.cost+')':''}`;
+            btn.disabled=!action.requires();
+            const tooltip=document.createElement('span'); tooltip.className='tooltip';
+            tooltip.innerHTML=Object.entries(action.effects).map(([k,v])=>{if(k==='invest') return 'Investing Action: Costs $5k, grows annually'; return `${k.charAt(0).toUpperCase()+k.slice(1)}: ${v>0?'+':''}${v}`;}).join('<br>')+`<br>Age Increase: ${action.menu==='work-menu'?1:0}`;
+            btn.appendChild(tooltip);
+            btn.onclick=()=>chooseAction(action);
+            menuDiv.appendChild(btn);
+        });
+    }
+}
+
+// --- Investment Growth ---
+function processInvestmentGrowth(years){
+    for(let i=0;i<years;i++){
+        if(stats.invested>0){
+            let growth=stats.invested*0.07; growth+=growth*(Math.random()*0.1-0.05); stats.invested+=Math.round(growth); animateStatChange('invested',Math.round(growth));
+        }
+    }
+}
+
+// --- Action Execution ---
+function chooseAction(action){
+    if(gameOver) return;
+    if(action.cost>0 && stats.networth<action.cost) return;
+
+    if(action.effects.invest){
+        stats.networth-=action.cost; animateStatChange('networth',-action.cost);
+        stats.invested+=action.cost; animateStatChange('invested',action.cost);
+        renderMenus(); return;
+    }
+
+    if(action.cost>0){ stats.networth-=action.cost; animateStatChange('networth',-action.cost);}
+    for(const key in action.effects){ if(key==='invest') continue; stats[key]+=action.effects[key]; animateStatChange(key,action.effects[key]||0);}
+    if(action.text==='College / University') collegeTaken=true;
+    if(action.text==='Volunteer') serviceDone=true;
+    if(stats.networth<=0 && !debtful){ debtful=true; alert("Entered 'In Debt' state! Health & Satisfaction decline rapidly.");}
+    if(action.menu==='work-menu'){ age+=1; processInvestmentGrowth(1);}
+    statInteractions();
+    document.getElementById("age-display").textContent=`Age: ${age}`;
+    if(checkEndGame()) return;
+    renderMenus();
+}
+
+// --- End Game ---
+function checkEndGame(){
+    if(stats.health <= 0){ endGame("You have succumbed to poor health."); return true;}
+    if(age > maxAge){ endGame("You reached the end of your life."); return true;}
+    if(stats.networth >= retirementThreshold){ if(confirm("You can retire! Choose OK to retire.")){endGame("You retired successfully!"); return true;} }
+    return false;
+}
+function endGame(msg){
+    gameOver=true; document.getElementById("menu-container").style.display='none';
+    document.getElementById("end-screen").style.display='block';
+    const summary=document.getElementById("summary");
+    let lifeSummary="";
+    if(stats.networth>=retirementThreshold && stats.satisfaction>70) lifeSummary="You achieved FIRE and high life satisfaction!";
+    else if(stats.networth>=retirementThreshold) lifeSummary="You achieved FIRE but could improve life satisfaction.";
+    else if(stats.satisfaction>70) lifeSummary="You lived happily, but wealth is modest.";
+    else lifeSummary="A balanced but modest life.";
+    let milestones=[]; if(collegeTaken) milestones.push("College Completed"); if(serviceDone) milestones.push("Service Volunteered"); if(stats.invested>0) milestones.push("Invested Successfully");
+    summary.innerHTML=`${msg}<br><br>
+    Final Stats:<br>
+    Happiness: ${stats.happiness}<br>
+    Net Worth: $${stats.networth}<br>
+    Invested Funds: $${stats.invested}<br>
+    Health: ${stats.health}<br>
+    Life Satisfaction: ${stats.satisfaction}<br><br>
+    Milestones Achieved: ${milestones.join(', ') || 'None'}<br>
+    ${lifeSummary}`;
+}
+
+// --- Restart & Start ---
+function restartGame(){ gameOver=false; age=20; collegeTaken=false; serviceDone=false; debtful=false; stats={happiness:50,networth:1000,invested:0,health:50,satisfaction:50};
+document.getElementById("end-screen").style.display='none'; document.getElementById("menu-container").style.display='flex'; renderMenus(); updateStatsDisplay(); }
+function startGame(){ document.getElementById('start-page').style.display='none'; document.getElementById('menu-container').style.display='flex'; renderMenus(); updateStatsDisplay(); }
+function goBack(){ window.location.href='index.html'; }
+
+// --- Initialize ---
+document.getElementById('menu-container').style.display='none';
+</script>
+</body>
+</html>
